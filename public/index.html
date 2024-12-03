@@ -4,28 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Room</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Chat Room</h1>
+    <div class="container">
+        <!-- Create Room -->
+        <div id="create-room">
+            <h2>Create Room</h2>
+            <button id="create-room-btn">Create Room</button>
+        </div>
 
-    <!-- Tombol untuk membuat room baru -->
-    <button onclick="createRoom()">Create Room</button>
+        <!-- Join Room -->
+        <div id="join-room" style="display: none;">
+            <h2>Join Room</h2>
+            <input type="text" id="room-code" placeholder="Enter Room Code">
+            <button id="join-room-btn">Join Room</button>
+        </div>
 
-    <!-- Input kode room untuk join -->
-    <input type="text" id="roomCode" placeholder="Enter room code">
-    <button onclick="joinRoom()">Join Room</button>
+        <!-- Chat Room -->
+        <div id="chat-room" style="display: none;">
+            <div id="air" class="air"></div>
+            <h2>Room Chat</h2>
+            <p>Invite Code: <span id="room-code-display"></span></p>
+            <div id="chat-box"></div>
+            <input type="text" id="message" placeholder="Type a message..." />
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
 
-    <!-- Tempat menampilkan pesan -->
-    <div id="chatBox"></div>
-
-    <!-- Tempat menampilkan status air -->
-    <div id="streak"></div>
-
-    <!-- Input pesan -->
-    <input type="text" id="messageInput">
-    <button onclick="sendMessage()">Send</button>
-
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
