@@ -1,27 +1,47 @@
-const WebSocket = require('ws');
 const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+
 const app = express();
-const http = require('http').Server(app);
+const server = http.createServer(app);
+const io = socketIo(server);
 
-// Membuat WebSocket server
-const wss = new WebSocket.Server({ server: http });
+let rooms = {}; // Store rooms and their messages
 
-wss.on('connection', function connection(ws) {
-  console.log('A new user connected');
-  
-  ws.on('message', function incoming(message) {
-    console.log('received: %s', message);
-  });
+// Serve static files from the public directory
+app.use(express.static('public'));
 
-  ws.send('Welcome to the WebSocket server!');
+// When a user creates a room
+io.on('connection', (socket) => {
+    socket.on('create-room', (callback) => {
+        const roomCode = Math.random().toString(36).substr(2, 6); // Generate a random room code
+        rooms[roomCode] = [];
+        callback(roomCode);
+    });
+
+    // When a user joins a room
+    socket.on('join-room', (roomCode) => {
+        if (rooms[roomCode]) {
+            socket.join(roomCode);
+            io.to(roomCode).emit('room-joined');
+        } else {
+            socket.emit('error', 'Room not found');
+        }
+    });
+
+    // When a user sends a message
+    socket.on('send-message', (data) => {
+        const { roomCode, message } = data;
+        if (rooms[roomCode]) {
+            rooms[roomCode].push(message);
+            io.to(roomCode).emit('receive-message', { message });
+        }
+    });
+
+    socket.on('disconnect', () => {});
 });
 
-// Menyediakan berkas index.html di route utama
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
-
-// Menjalankan server pada port 3000
-http.listen(3000, () => {
-  console.log('Server started on port 3000');
+// Start the server
+server.listen(3000, () => {
+    console.log('Server is running on http://localhost:3000');
 });
