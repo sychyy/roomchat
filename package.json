@@ -3,16 +3,10 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",         // untuk menjalankan server
-    "dev": "nodemon server.js",        // untuk development dengan nodemon
-    "build": "echo 'Build complete'"   // build kosong (karena backend tidak perlu build)
+    "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.17.1",              // dependensi Express
-    "ws": "^8.5.0",                    // dependensi WebSocket
-    "nodemon": "^2.0.15"               // optional, untuk development dengan hot-reload
-  },
-  "engines": {
-    "node": "16.x"                     // Menentukan versi node.js yang digunakan
+    "express": "^4.17.1",
+    "ws": "^8.5.0"
   }
 }
