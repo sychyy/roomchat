@@ -1,44 +1,69 @@
-// WebSocket untuk komunikasi real-time
-const socket = new WebSocket('wss://35ccffc0-0dc6-4539-9e1e-69f0dd5b673e-00-q40aqvfv8b43.pike.replit.dev/');
+// Connect to the socket server
+const socket = io();
 
-// Fungsi untuk membuat room baru
-function createRoom() {
-    const roomCode = Math.random().toString(36).substring(2, 8); // Membuat kode room acak
-    window.location.href = `/room/${roomCode}`; // Mengarahkan ke room baru
-}
+// DOM elements
+const createRoomBtn = document.getElementById('create-room-btn');
+const joinRoomBtn = document.getElementById('join-room-btn');
+const sendBtn = document.getElementById('send-btn');
+const messageInput = document.getElementById('message');
+const chatBox = document.getElementById('chat-box');
+const roomCodeDisplay = document.getElementById('room-code-display');
+const airDiv = document.getElementById('air');
 
-// Fungsi untuk bergabung ke room
-function joinRoom() {
-    const roomCode = document.getElementById('roomCode').value;
-    if (roomCode) {
-        window.location.href = `/room/${roomCode}`; // Arahkan ke room yang diinginkan
-    } else {
-        alert('Masukkan kode room yang valid!');
+// State variables
+let currentRoomCode = '';
+
+// Create room handler
+createRoomBtn.addEventListener('click', () => {
+    socket.emit('create-room', (roomCode) => {
+        currentRoomCode = roomCode;
+        document.getElementById('create-room').style.display = 'none';
+        document.getElementById('chat-room').style.display = 'block';
+        roomCodeDisplay.textContent = roomCode;
+    });
+});
+
+// Join room handler
+joinRoomBtn.addEventListener('click', () => {
+    const roomCode = document.getElementById('room-code').value;
+    socket.emit('join-room', roomCode);
+    currentRoomCode = roomCode;
+    document.getElementById('join-room').style.display = 'none';
+    document.getElementById('chat-room').style.display = 'block';
+    roomCodeDisplay.textContent = roomCode;
+});
+
+// Send message handler
+sendBtn.addEventListener('click', () => {
+    const message = messageInput.value;
+    if (message.trim()) {
+        socket.emit('send-message', { roomCode: currentRoomCode, message });
+        messageInput.value = '';
     }
-}
+});
 
-// Fungsi untuk mengirim pesan
-function sendMessage() {
-    const message = document.getElementById('messageInput').value;
-    socket.send(message); // Mengirim pesan melalui WebSocket
-}
+// Update chat box
+socket.on('receive-message', (data) => {
+    const messageDiv = document.createElement('div');
+    messageDiv.textContent = data.message;
+    chatBox.appendChild(messageDiv);
+    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the latest message
+});
 
-// Fungsi untuk menerima pesan
-socket.onmessage = function(event) {
-    const chatBox = document.getElementById('chatBox');
-    chatBox.innerHTML += `<p>${event.data}</p>`; // Menampilkan pesan baru di chat
-};
+// Update air color every hour
+setInterval(() => {
+    const now = new Date();
+    const lastMessageTime = new Date(localStorage.getItem('lastMessageTime'));
+    const diff = now - lastMessageTime;
 
-// Fungsi untuk mengubah status air berdasarkan waktu chatting
-function updateWaterStreak() {
-    const currentTime = new Date().getHours();
-    const streakElement = document.getElementById('streak');
-    if (currentTime % 2 === 0) { // Cek apakah waktu chatting di dalam interval tertentu
-        streakElement.style.backgroundColor = 'blue'; // Air berwarna biru jika chatting terus
+    if (diff <= 60 * 60 * 1000) {
+        airDiv.style.backgroundColor = 'blue'; // Blue air if within 1 hour
     } else {
-        streakElement.style.backgroundColor = 'gray'; // Air berwarna abu-abu jika tidak ada chat
+        airDiv.style.backgroundColor = 'gray'; // Gray air after 1 hour
     }
-}
+}, 60000);
 
-// Set interval untuk update streak setiap 1 jam
-setInterval(updateWaterStreak, 3600000); // Update setiap jam
+// Listen for room joined event
+socket.on('room-joined', () => {
+    localStorage.setItem('lastMessageTime', new Date().toISOString()); // Set the last message time
+});
