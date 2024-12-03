@@ -1,75 +1,44 @@
-const createRoomBtn = document.getElementById('createRoomBtn');
-const joinRoomBtn = document.getElementById('joinRoomBtn');
-const messageInput = document.getElementById('messageInput');
-const sendBtn = document.getElementById('sendBtn');
-const roomCodeInput = document.getElementById('roomCode');
-const messagesDiv = document.getElementById('messages');
-const waterDiv = document.getElementById('water');
+// WebSocket untuk komunikasi real-time
+const socket = new WebSocket('wss://35ccffc0-0dc6-4539-9e1e-69f0dd5b673e-00-q40aqvfv8b43.pike.replit.dev/');
 
-let socket;
-let roomCode = '';
-let lastMessageTime = Date.now();
-let streakTimer;
-
-createRoomBtn.addEventListener('click', createRoom);
-joinRoomBtn.addEventListener('click', joinRoom);
-sendBtn.addEventListener('click', sendMessage);
-
+// Fungsi untuk membuat room baru
 function createRoom() {
-  roomCode = generateRoomCode();
-  alert(`Room created! Share this code: ${roomCode}`);
-  connectToRoom(roomCode);
+    const roomCode = Math.random().toString(36).substring(2, 8); // Membuat kode room acak
+    window.location.href = `/room/${roomCode}`; // Mengarahkan ke room baru
 }
 
+// Fungsi untuk bergabung ke room
 function joinRoom() {
-  roomCode = roomCodeInput.value;
-  if (roomCode) {
-    connectToRoom(roomCode);
-  } else {
-    alert('Please enter a room code!');
-  }
+    const roomCode = document.getElementById('roomCode').value;
+    if (roomCode) {
+        window.location.href = `/room/${roomCode}`; // Arahkan ke room yang diinginkan
+    } else {
+        alert('Masukkan kode room yang valid!');
+    }
 }
 
-function connectToRoom(code) {
-  socket = new WebSocket(`ws://localhost:3000/${code}`);
-  socket.onopen = () => {
-    document.querySelector('.create-join').style.display = 'none';
-    document.querySelector('.chat-box').style.display = 'block';
-    startStreak();
-  };
-  socket.onmessage = (event) => {
-    const message = event.data;
-    const messageElement = document.createElement('div');
-    messageElement.textContent = message;
-    messagesDiv.appendChild(messageElement);
-    updateStreak();
-  };
-}
-
+// Fungsi untuk mengirim pesan
 function sendMessage() {
-  const message = messageInput.value;
-  if (message && socket) {
-    socket.send(message);
-    messageInput.value = '';
-    updateStreak();
-  }
+    const message = document.getElementById('messageInput').value;
+    socket.send(message); // Mengirim pesan melalui WebSocket
 }
 
-function updateStreak() {
-  lastMessageTime = Date.now();
-  clearTimeout(streakTimer);
-  streakTimer = setTimeout(() => {
-    waterDiv.style.backgroundColor = '#ccc'; // Grey if inactive
-  }, 3600000); // 1 hour
-  waterDiv.style.backgroundColor = '#3498db'; // Blue if active
+// Fungsi untuk menerima pesan
+socket.onmessage = function(event) {
+    const chatBox = document.getElementById('chatBox');
+    chatBox.innerHTML += `<p>${event.data}</p>`; // Menampilkan pesan baru di chat
+};
+
+// Fungsi untuk mengubah status air berdasarkan waktu chatting
+function updateWaterStreak() {
+    const currentTime = new Date().getHours();
+    const streakElement = document.getElementById('streak');
+    if (currentTime % 2 === 0) { // Cek apakah waktu chatting di dalam interval tertentu
+        streakElement.style.backgroundColor = 'blue'; // Air berwarna biru jika chatting terus
+    } else {
+        streakElement.style.backgroundColor = 'gray'; // Air berwarna abu-abu jika tidak ada chat
+    }
 }
 
-function startStreak() {
-  streakTimer = setTimeout(() => {
-    waterDiv.style.backgroundColor = '#ccc'; // Grey if inactive
-  }, 3600000); // 1 hour
-}
-
-function generateRoomCode() {
-  return Math.random().toString(36).substr(2, 6); // Generates a random 6 character code
-}
+// Set interval untuk update streak setiap 1 jam
+setInterval(updateWaterStreak, 3600000); // Update setiap jam
