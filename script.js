@@ -1,46 +1,75 @@
-let socket = new WebSocket("ws://35ccffc0-0dc6-4539-9e1e-69f0dd5b673e-00-q40aqvfv8b43.pike.replit.dev:8080");  // Ganti dengan URL WebSocket dari Replit
-let sendButton = document.getElementById("send");
-let messageInput = document.getElementById("message");
-let chatBox = document.getElementById("chat-box");
-let streak = document.getElementById("streak");
+const createRoomBtn = document.getElementById('createRoomBtn');
+const joinRoomBtn = document.getElementById('joinRoomBtn');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const roomCodeInput = document.getElementById('roomCode');
+const messagesDiv = document.getElementById('messages');
+const waterDiv = document.getElementById('water');
 
+let socket;
+let roomCode = '';
 let lastMessageTime = Date.now();
-let streakActive = false;
+let streakTimer;
 
-socket.onopen = () => {
-  console.log("Connected to WebSocket");
-};
+createRoomBtn.addEventListener('click', createRoom);
+joinRoomBtn.addEventListener('click', joinRoom);
+sendBtn.addEventListener('click', sendMessage);
 
-socket.onmessage = (event) => {
-  let msg = event.data;
-  let messageElement = document.createElement("p");
-  messageElement.textContent = msg;
-  chatBox.appendChild(messageElement);
-};
+function createRoom() {
+  roomCode = generateRoomCode();
+  alert(`Room created! Share this code: ${roomCode}`);
+  connectToRoom(roomCode);
+}
 
-sendButton.onclick = () => {
-  let message = messageInput.value;
-  if (message) {
-    socket.send(message);
-    let messageElement = document.createElement("p");
-    messageElement.textContent = `You: ${message}`;
-    chatBox.appendChild(messageElement);
-    messageInput.value = "";
-    checkStreak();
-  }
-};
-
-function checkStreak() {
-  let currentTime = Date.now();
-  let timeDifference = currentTime - lastMessageTime;
-
-  if (timeDifference >= 3600000) {  // 1 hour in milliseconds
-    streak.classList.add("active");
-    streakActive = true;
+function joinRoom() {
+  roomCode = roomCodeInput.value;
+  if (roomCode) {
+    connectToRoom(roomCode);
   } else {
-    streak.classList.remove("active");
-    streakActive = false;
+    alert('Please enter a room code!');
   }
+}
 
-  lastMessageTime = currentTime;
+function connectToRoom(code) {
+  socket = new WebSocket(`ws://localhost:3000/${code}`);
+  socket.onopen = () => {
+    document.querySelector('.create-join').style.display = 'none';
+    document.querySelector('.chat-box').style.display = 'block';
+    startStreak();
+  };
+  socket.onmessage = (event) => {
+    const message = event.data;
+    const messageElement = document.createElement('div');
+    messageElement.textContent = message;
+    messagesDiv.appendChild(messageElement);
+    updateStreak();
+  };
+}
+
+function sendMessage() {
+  const message = messageInput.value;
+  if (message && socket) {
+    socket.send(message);
+    messageInput.value = '';
+    updateStreak();
+  }
+}
+
+function updateStreak() {
+  lastMessageTime = Date.now();
+  clearTimeout(streakTimer);
+  streakTimer = setTimeout(() => {
+    waterDiv.style.backgroundColor = '#ccc'; // Grey if inactive
+  }, 3600000); // 1 hour
+  waterDiv.style.backgroundColor = '#3498db'; // Blue if active
+}
+
+function startStreak() {
+  streakTimer = setTimeout(() => {
+    waterDiv.style.backgroundColor = '#ccc'; // Grey if inactive
+  }, 3600000); // 1 hour
+}
+
+function generateRoomCode() {
+  return Math.random().toString(36).substr(2, 6); // Generates a random 6 character code
 }
